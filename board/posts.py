@@ -1,12 +1,5 @@
-from flask import (
-    Blueprint,
-    redirect,
-    render_template,
-    request,
-    url_for,
-)
-
-from board.database import get_db
+from flask import Blueprint, redirect, render_template, request, url_for
+from board.database import get_pg_db_conn
 
 bp = Blueprint("posts", __name__)
 
@@ -15,22 +8,26 @@ def create():
     if request.method == "POST":
         author = request.form["author"] or "Anonymous"
         message = request.form["message"]
-
         if message:
-            db = get_db()
-            db.execute(
-                "INSERT INTO post (author, message) VALUES (?, ?)",
-                (author, message),
+            db = get_pg_db_conn()
+            cur = db.cursor()
+            cur.execute(
+                "INSERT INTO post (author, message) VALUES (%s, %s)",
+                (author, message)
             )
             db.commit()
-            return redirect(url_for("posts.posts"))
-
+            cur.close()
+            db.close()
+            return redirect(url_for("posts.post"))
     return render_template("posts/create.html")
 
 @bp.route("/posts")
 def posts():
-    db = get_db()
-    posts = db.execute(
-        "SELECT author, message, created FROM post ORDER BY created DESC"
-    ).fetchall()
+    db = get_pg_db_conn()
+    cur = db.cursor()
+    cur.execute("SELECT author, message, created FROM post ORDER BY created DESC")
+    posts = cur.fetchall()
+    cur.close()
+    db.close()
     return render_template("posts/posts.html", posts=posts)
+
