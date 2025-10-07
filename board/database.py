@@ -31,4 +31,14 @@ def close_db(e=None):
     if db is not None:
         db.close()
 
+import psycopg2
 
+def get_pg_db_conn():
+    conn = psycopg2.connect(
+        host="psql-db",
+        database="flask_db",
+        user="admin",
+        password="P4ssw0rd",
+        port="5432"
+    )
+    return conn
